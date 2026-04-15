@@ -99,7 +99,9 @@ BACKEND_CORS_ORIGINS=https://ibp-web-qa.jbtechinnova.com
 DATABASE_URL=postgresql+psycopg://postgres:configure-no-ambiente@postgres:5432/postgres
 REDIS_URL=redis://:configure-no-ambiente@redis:6379/1
 
-S3_ENDPOINT=minio-infra-qa.jbtechinnova.com
+OBJECT_STORAGE_ENDPOINT=https://s3-infra-qa.jbtechinnova.com
+OBJECT_STORAGE_API_ENDPOINT=https://s3-infra-qa.jbtechinnova.com
+S3_ENDPOINT=s3-infra-qa.jbtechinnova.com
 S3_SECURE=true
 S3_BUCKET=plataforma-ibp
 S3_ACCESS_KEY=configure-no-ambiente
@@ -117,13 +119,17 @@ Para CORS, use somente origins, sem caminho e sem barra final. Exemplo correto: 
 
 O bucket esperado para documentos, fotos e assinaturas e `plataforma-ibp`.
 
-Use o host S3 em `S3_ENDPOINT`, sem path de console/API. Para QA:
+Use o endpoint da API S3, nao o console/browser do MinIO. Para QA:
 
 ```env
-S3_ENDPOINT=minio-infra-qa.jbtechinnova.com
+OBJECT_STORAGE_ENDPOINT=https://s3-infra-qa.jbtechinnova.com
+OBJECT_STORAGE_API_ENDPOINT=https://s3-infra-qa.jbtechinnova.com
+S3_ENDPOINT=s3-infra-qa.jbtechinnova.com
 S3_SECURE=true
 S3_BUCKET=plataforma-ibp
 ```
+
+O console/browser do MinIO e `https://minio-infra-qa.jbtechinnova.com`; ele nao deve ser usado como endpoint S3 da aplicacao.
 
 As credenciais `S3_ACCESS_KEY` e `S3_SECRET_KEY` devem ficar no `.env` real ou no mecanismo de secrets do ambiente, nunca no `.env.example`.
 

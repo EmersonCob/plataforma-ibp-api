@@ -2,7 +2,7 @@ from functools import lru_cache
 from typing import Any
 from urllib.parse import urlparse
 
-from pydantic import EmailStr, field_validator
+from pydantic import AliasChoices, EmailStr, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -21,7 +21,10 @@ class Settings(BaseSettings):
     database_url: str
     redis_url: str = "redis://localhost:6379/0"
 
-    s3_endpoint: str = "minio-infra-qa.jbtechinnova.com"
+    s3_endpoint: str = Field(
+        default="s3-infra-qa.jbtechinnova.com",
+        validation_alias=AliasChoices("OBJECT_STORAGE_API_ENDPOINT", "OBJECT_STORAGE_ENDPOINT", "S3_ENDPOINT"),
+    )
     s3_secure: bool = True
     s3_bucket: str = "plataforma-ibp"
     s3_access_key: str
