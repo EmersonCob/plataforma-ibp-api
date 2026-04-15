@@ -96,8 +96,8 @@ REFRESH_TOKEN_EXPIRE_MINUTES=10080
 PUBLIC_SIGN_URL_BASE=https://ibp-web-qa.jbtechinnova.com/assinatura
 BACKEND_CORS_ORIGINS=https://ibp-web-qa.jbtechinnova.com
 
-DATABASE_URL=postgresql+psycopg://usuario:senha@host:5432/banco
-REDIS_URL=redis://host:6379/0
+DATABASE_URL=postgresql+psycopg://postgres:configure-no-ambiente@postgres:5432/postgres
+REDIS_URL=redis://:configure-no-ambiente@redis:6379/1
 
 S3_ENDPOINT=minio-infra-qa.jbtechinnova.com
 S3_SECURE=true
@@ -126,6 +126,27 @@ S3_BUCKET=plataforma-ibp
 ```
 
 As credenciais `S3_ACCESS_KEY` e `S3_SECRET_KEY` devem ficar no `.env` real ou no mecanismo de secrets do ambiente, nunca no `.env.example`.
+
+## Stack QA
+
+O arquivo `deploy/stack.yml` usa a rede externa `jbtechinnova` e estes servicos:
+
+- `plataforma_ibp_api`
+- `nginx_plataforma_ibp_api`
+
+A API monta o arquivo de ambiente em:
+
+```text
+/root/base_dados/plataforma_ibp_api/.env:/app/.env:ro
+```
+
+O Nginx monta:
+
+```text
+/root/base_dados/plataforma_ibp_api/deploy/nginx.conf:/etc/nginx/nginx.conf:ro
+```
+
+O dominio publicado via Traefik e `ibp-api-qa.jbtechinnova.com`.
 
 ## Fluxo principal
 
