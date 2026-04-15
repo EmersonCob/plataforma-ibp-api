@@ -99,11 +99,11 @@ BACKEND_CORS_ORIGINS=https://ibp-web-qa.jbtechinnova.com
 DATABASE_URL=postgresql+psycopg://usuario:senha@host:5432/banco
 REDIS_URL=redis://host:6379/0
 
-S3_ENDPOINT=host:9000
+S3_ENDPOINT=minio-infra-qa.jbtechinnova.com
 S3_SECURE=true
 S3_BUCKET=plataforma-ibp
-S3_ACCESS_KEY=access-key
-S3_SECRET_KEY=secret-key
+S3_ACCESS_KEY=configure-no-ambiente
+S3_SECRET_KEY=configure-no-ambiente
 S3_PRESIGNED_EXPIRES_SECONDS=900
 
 MAX_UPLOAD_MB=8
@@ -112,6 +112,20 @@ PUBLIC_RATE_LIMIT=30/minute
 ```
 
 Para CORS, use somente origins, sem caminho e sem barra final. Exemplo correto: `https://ibp-web-qa.jbtechinnova.com`. Nao use `https://ibp-web-qa.jbtechinnova.com/assinatura`.
+
+## S3/MinIO
+
+O bucket esperado para documentos, fotos e assinaturas e `plataforma-ibp`.
+
+Use o host S3 em `S3_ENDPOINT`, sem path de console/API. Para QA:
+
+```env
+S3_ENDPOINT=minio-infra-qa.jbtechinnova.com
+S3_SECURE=true
+S3_BUCKET=plataforma-ibp
+```
+
+As credenciais `S3_ACCESS_KEY` e `S3_SECRET_KEY` devem ficar no `.env` real ou no mecanismo de secrets do ambiente, nunca no `.env.example`.
 
 ## Fluxo principal
 
