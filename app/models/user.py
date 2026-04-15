@@ -13,7 +13,7 @@ class User(UUIDMixin, TimestampMixin, Base):
     password_hash: Mapped[str] = mapped_column(String(512), nullable=False)
     role: Mapped[UserRole] = mapped_column(
         Enum(UserRole, name="ibp_user_role", inherit_schema=True),
-        default=UserRole.admin,
+        default=UserRole.adm,
         nullable=False,
     )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)

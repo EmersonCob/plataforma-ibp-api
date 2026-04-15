@@ -21,4 +21,4 @@ class MeResponse(BaseModel):
     name: str
     email: EmailStr
     role: str
-
+    role_level: int

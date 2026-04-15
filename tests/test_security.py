@@ -5,7 +5,9 @@ os.environ.setdefault("DATABASE_URL", "postgresql+psycopg://test:test@localhost:
 os.environ.setdefault("S3_ACCESS_KEY", "test")
 os.environ.setdefault("S3_SECRET_KEY", "test")
 
+from app.core.permissions import normalize_role, public_role_value, role_level  # noqa: E402
 from app.core.security import decode_token, generate_public_token, hash_password, verify_password, create_access_token  # noqa: E402
+from app.models.enums import UserRole  # noqa: E402
 
 
 def test_password_hash_roundtrip() -> None:
@@ -30,3 +32,11 @@ def test_jwt_contains_subject_and_role() -> None:
     assert payload["role"] == "admin"
     assert payload["type"] == "access"
 
+
+def test_user_role_levels_and_legacy_admin_normalization() -> None:
+    assert role_level(UserRole.usuario) == 1
+    assert role_level(UserRole.gerente) == 2
+    assert role_level(UserRole.adm) == 3
+    assert role_level(UserRole.admin) == 3
+    assert normalize_role(UserRole.admin) == UserRole.adm
+    assert public_role_value(UserRole.admin) == "adm"

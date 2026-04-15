@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.api.deps import require_admin
+from app.api.deps import require_manager
 from app.db.session import get_db
 from app.models.enums import NotificationChannel
 from app.models.user import User
@@ -18,7 +18,7 @@ async def trigger_contract_notification(
     contract_id: str,
     payload: TriggerNotificationRequest,
     db: Session = Depends(get_db),
-    _: User = Depends(require_admin),
+    _: User = Depends(require_manager),
 ):
     contract = contract_service.get(db, contract_id)
     try:

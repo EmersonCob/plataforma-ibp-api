@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
+from app.core.permissions import public_role_value, role_level
 from app.core.rate_limit import login_rate_limit
 from app.db.session import get_db
 from app.models.user import User
@@ -24,5 +25,10 @@ def refresh(payload: RefreshRequest, db: Session = Depends(get_db)) -> dict[str,
 
 @router.get("/me", response_model=MeResponse)
 def me(user: User = Depends(get_current_user)) -> MeResponse:
-    return MeResponse(id=user.id, name=user.name, email=user.email, role=user.role.value)
-
+    return MeResponse(
+        id=user.id,
+        name=user.name,
+        email=user.email,
+        role=public_role_value(user.role),
+        role_level=role_level(user.role),
+    )

@@ -1,6 +1,6 @@
 import logging
 
-from sqlalchemy import inspect, select, text
+from sqlalchemy import inspect, select, text, update
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.schema import CreateColumn
 
@@ -26,6 +26,7 @@ def init_database_schema() -> None:
     try:
         with engine.begin() as connection:
             connection.execute(text(f'CREATE SCHEMA IF NOT EXISTS "{settings.database_schema}"'))
+            _ensure_postgres_enum_values(connection)
             Base.metadata.create_all(bind=connection, checkfirst=True)
             _add_missing_nullable_columns(connection)
 
@@ -41,6 +42,33 @@ def init_database_schema() -> None:
         raise RuntimeError(f"Tabelas obrigatorias ausentes: {', '.join(missing_tables)}")
 
     logger.info("Database schema ready with %s tables", len(expected_tables))
+
+
+def _ensure_postgres_enum_values(connection) -> None:
+    if connection.dialect.name != "postgresql":
+        return
+
+    enum_exists = connection.scalar(
+        text(
+            """
+            SELECT EXISTS (
+                SELECT 1
+                FROM pg_type t
+                JOIN pg_namespace n ON n.oid = t.typnamespace
+                WHERE n.nspname = :schema_name
+                  AND t.typname = 'ibp_user_role'
+            )
+            """
+        ),
+        {"schema_name": settings.database_schema},
+    )
+    if not enum_exists:
+        return
+
+    schema_name = settings.database_schema.replace('"', '""')
+    for role in UserRole:
+        value = role.value.replace("'", "''")
+        connection.exec_driver_sql(f'ALTER TYPE "{schema_name}"."ibp_user_role" ADD VALUE IF NOT EXISTS \'{value}\'')
 
 
 def _add_missing_nullable_columns(connection) -> None:
@@ -93,11 +121,13 @@ def bootstrap_initial_data() -> None:
                         name=settings.initial_admin_name or "Administrador",
                         email=str(settings.initial_admin_email).lower(),
                         password_hash=hash_password(settings.initial_admin_password),
-                        role=UserRole.admin,
+                        role=UserRole.adm,
                         is_active=True,
                     )
                 )
                 logger.info("Initial admin user created for %s", settings.initial_admin_email)
+
+        db.execute(update(User).where(User.role == UserRole.admin).values(role=UserRole.adm))
 
         if settings.bootstrap_default_template:
             template = db.scalar(

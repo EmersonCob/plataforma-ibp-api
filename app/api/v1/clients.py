@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
-from app.api.deps import require_admin
+from app.api.deps import require_user
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.client import ClientCreate, ClientListResponse, ClientRead, ClientStatusUpdate, ClientUpdate
@@ -16,19 +16,19 @@ def list_clients(
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
-    _: User = Depends(require_admin),
+    _: User = Depends(require_user),
 ) -> ClientListResponse:
     items, total = client_service.list(db, search=search, page=page, size=size)
     return ClientListResponse(items=items, total=total, page=page, size=size)
 
 
 @router.post("", response_model=ClientRead, status_code=201)
-def create_client(payload: ClientCreate, db: Session = Depends(get_db), user: User = Depends(require_admin)) -> ClientRead:
+def create_client(payload: ClientCreate, db: Session = Depends(get_db), user: User = Depends(require_user)) -> ClientRead:
     return client_service.create(db, payload, user)
 
 
 @router.get("/{client_id}", response_model=ClientRead)
-def get_client(client_id: str, db: Session = Depends(get_db), _: User = Depends(require_admin)) -> ClientRead:
+def get_client(client_id: str, db: Session = Depends(get_db), _: User = Depends(require_user)) -> ClientRead:
     return client_service.get(db, client_id)
 
 
@@ -37,7 +37,7 @@ def update_client(
     client_id: str,
     payload: ClientUpdate,
     db: Session = Depends(get_db),
-    user: User = Depends(require_admin),
+    user: User = Depends(require_user),
 ) -> ClientRead:
     return client_service.update(db, client_id, payload, user)
 
@@ -47,7 +47,6 @@ def update_client_status(
     client_id: str,
     payload: ClientStatusUpdate,
     db: Session = Depends(get_db),
-    user: User = Depends(require_admin),
+    user: User = Depends(require_user),
 ) -> ClientRead:
     return client_service.update(db, client_id, ClientUpdate(status=payload.status), user)
-

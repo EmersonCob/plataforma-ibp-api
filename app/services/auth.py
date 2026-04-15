@@ -2,6 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.errors import AppError
+from app.core.permissions import public_role_value
 from app.core.security import create_access_token, create_refresh_token, decode_token, verify_password
 from app.models.user import User
 
@@ -17,7 +18,7 @@ class AuthService:
 
     def issue_tokens(self, user: User) -> dict[str, str]:
         return {
-            "access_token": create_access_token(user.id, user.role.value),
+            "access_token": create_access_token(user.id, public_role_value(user.role)),
             "refresh_token": create_refresh_token(user.id),
             "token_type": "bearer",
         }
@@ -31,4 +32,3 @@ class AuthService:
 
 
 auth_service = AuthService()
-

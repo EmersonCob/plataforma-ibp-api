@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.deps import require_admin
+from app.api.deps import require_manager, require_user
 from app.db.session import get_db
 from app.models.audit_log import AuditLog
 from app.models.contract import ContractTemplate
@@ -28,7 +28,7 @@ router = APIRouter(prefix="/contracts", tags=["Contracts"])
 
 
 @router.get("/templates", response_model=list[ContractTemplateRead])
-def list_templates(db: Session = Depends(get_db), _: User = Depends(require_admin)) -> list[ContractTemplate]:
+def list_templates(db: Session = Depends(get_db), _: User = Depends(require_user)) -> list[ContractTemplate]:
     return list(db.scalars(select(ContractTemplate).where(ContractTemplate.is_active.is_(True)).order_by(ContractTemplate.name)).all())
 
 
@@ -39,19 +39,19 @@ def list_contracts(
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
-    _: User = Depends(require_admin),
+    _: User = Depends(require_user),
 ) -> ContractListResponse:
     items, total = contract_service.list(db, search=search, status=status, page=page, size=size)
     return ContractListResponse(items=items, total=total, page=page, size=size)
 
 
 @router.post("", response_model=ContractRead, status_code=201)
-def create_contract(payload: ContractCreate, db: Session = Depends(get_db), user: User = Depends(require_admin)) -> ContractRead:
+def create_contract(payload: ContractCreate, db: Session = Depends(get_db), user: User = Depends(require_user)) -> ContractRead:
     return contract_service.create(db, payload, user)
 
 
 @router.get("/{contract_id}", response_model=ContractRead)
-def get_contract(contract_id: str, db: Session = Depends(get_db), _: User = Depends(require_admin)) -> ContractRead:
+def get_contract(contract_id: str, db: Session = Depends(get_db), _: User = Depends(require_user)) -> ContractRead:
     return contract_service.get(db, contract_id)
 
 
@@ -60,7 +60,7 @@ def update_contract(
     contract_id: str,
     payload: ContractUpdate,
     db: Session = Depends(get_db),
-    user: User = Depends(require_admin),
+    user: User = Depends(require_manager),
 ) -> ContractRead:
     return contract_service.update(db, contract_id, payload, user)
 
@@ -70,7 +70,7 @@ async def generate_link(
     contract_id: str,
     payload: GenerateLinkRequest,
     db: Session = Depends(get_db),
-    user: User = Depends(require_admin),
+    user: User = Depends(require_user),
 ) -> SignLinkResponse:
     contract, sign_url = contract_service.generate_link(db, contract_id, user, payload.expires_at)
     if payload.trigger_notification:
@@ -84,17 +84,17 @@ async def generate_link(
 
 
 @router.post("/{contract_id}/cancel", response_model=ContractRead)
-def cancel_contract(contract_id: str, db: Session = Depends(get_db), user: User = Depends(require_admin)) -> ContractRead:
+def cancel_contract(contract_id: str, db: Session = Depends(get_db), user: User = Depends(require_manager)) -> ContractRead:
     return contract_service.cancel(db, contract_id, user)
 
 
 @router.post("/{contract_id}/expire", response_model=ContractRead)
-def expire_contract(contract_id: str, db: Session = Depends(get_db), user: User = Depends(require_admin)) -> ContractRead:
+def expire_contract(contract_id: str, db: Session = Depends(get_db), user: User = Depends(require_manager)) -> ContractRead:
     return contract_service.expire(db, contract_id, user)
 
 
 @router.get("/{contract_id}/versions", response_model=list[ContractVersionRead])
-def list_versions(contract_id: str, db: Session = Depends(get_db), _: User = Depends(require_admin)) -> list:
+def list_versions(contract_id: str, db: Session = Depends(get_db), _: User = Depends(require_user)) -> list:
     return contract_service.versions(db, contract_id)
 
 
@@ -103,7 +103,7 @@ def create_version(
     contract_id: str,
     payload: ContractVersionCreate,
     db: Session = Depends(get_db),
-    user: User = Depends(require_admin),
+    user: User = Depends(require_manager),
 ):
     return contract_service.add_version(db, contract_id, payload.content, user)
 
@@ -112,7 +112,7 @@ def create_version(
 def get_signed_document(
     contract_id: str,
     db: Session = Depends(get_db),
-    _: User = Depends(require_admin),
+    _: User = Depends(require_user),
 ) -> dict:
     contract = contract_service.get(db, contract_id)
     return contract_service.signed_document_response(contract)
@@ -122,14 +122,14 @@ def get_signed_document(
 def generate_signed_document(
     contract_id: str,
     db: Session = Depends(get_db),
-    user: User = Depends(require_admin),
+    user: User = Depends(require_user),
 ) -> dict:
     contract = contract_service.generate_signed_document(db, contract_id, user)
     return contract_service.signed_document_response(contract)
 
 
 @router.get("/{contract_id}/audit")
-def get_contract_audit(contract_id: str, db: Session = Depends(get_db), _: User = Depends(require_admin)) -> list[dict]:
+def get_contract_audit(contract_id: str, db: Session = Depends(get_db), _: User = Depends(require_user)) -> list[dict]:
     rows = db.scalars(
         select(AuditLog)
         .where(AuditLog.entity_type == "contract", AuditLog.entity_id == contract_id)
@@ -150,7 +150,7 @@ def get_contract_audit(contract_id: str, db: Session = Depends(get_db), _: User 
 
 
 @router.get("/{contract_id}/signature-evidence")
-def get_signature_evidence(contract_id: str, db: Session = Depends(get_db), _: User = Depends(require_admin)) -> dict:
+def get_signature_evidence(contract_id: str, db: Session = Depends(get_db), _: User = Depends(require_user)) -> dict:
     contract = contract_service.get(db, contract_id)
     if not contract.signature:
         return {"face_photo_url": None, "signature_image_url": None}

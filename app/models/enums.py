@@ -2,6 +2,11 @@ from enum import StrEnum
 
 
 class UserRole(StrEnum):
+    adm = "adm"
+    gerente = "gerente"
+    usuario = "usuario"
+    # Valor legado usado nas primeiras versões. Mantido para leitura segura
+    # de bancos que já tinham usuário inicial com role "admin".
     admin = "admin"
 
 
@@ -43,4 +48,3 @@ class NotificationStatus(StrEnum):
     pending = "pending"
     sent = "sent"
     failed = "failed"
-
