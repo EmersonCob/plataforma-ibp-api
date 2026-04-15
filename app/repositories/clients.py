@@ -11,7 +11,13 @@ class ClientRepository:
 
         if search:
             term = f"%{search.strip()}%"
-            condition = or_(Client.full_name.ilike(term), Client.email.ilike(term), Client.cpf.ilike(term))
+            condition = or_(
+                Client.full_name.ilike(term),
+                Client.email.ilike(term),
+                Client.cpf.ilike(term),
+                Client.city.ilike(term),
+                Client.zip_code.ilike(term),
+            )
             statement = statement.where(condition)
             count_statement = count_statement.where(condition)
 
@@ -21,4 +27,3 @@ class ClientRepository:
 
 
 client_repository = ClientRepository()
-

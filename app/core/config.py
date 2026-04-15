@@ -33,6 +33,8 @@ class Settings(BaseSettings):
     s3_presigned_expires_seconds: int = 900
 
     max_upload_mb: int = 8
+    image_max_dimension: int = 1280
+    image_jpeg_quality: int = 86
     login_rate_limit: str = "8/minute"
     public_rate_limit: str = "30/minute"
 
@@ -62,6 +64,20 @@ class Settings(BaseSettings):
 
         if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", value):
             raise ValueError("DATABASE_SCHEMA deve conter apenas letras, numeros e underscore, sem iniciar por numero")
+        return value
+
+    @field_validator("image_max_dimension")
+    @classmethod
+    def validate_image_max_dimension(cls, value: int) -> int:
+        if not 640 <= value <= 4096:
+            raise ValueError("IMAGE_MAX_DIMENSION deve estar entre 640 e 4096")
+        return value
+
+    @field_validator("image_jpeg_quality")
+    @classmethod
+    def validate_image_jpeg_quality(cls, value: int) -> int:
+        if not 60 <= value <= 95:
+            raise ValueError("IMAGE_JPEG_QUALITY deve estar entre 60 e 95")
         return value
 
     @field_validator("s3_endpoint", mode="before")

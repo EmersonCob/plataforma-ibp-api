@@ -12,15 +12,39 @@ class ClientBase(BaseModel):
     phone: str | None = Field(default=None, max_length=40)
     email: EmailStr | None = None
     address: str | None = Field(default=None, max_length=2000)
+    address_street: str | None = Field(default=None, max_length=220)
+    address_number: str | None = Field(default=None, max_length=40)
+    address_complement: str | None = Field(default=None, max_length=120)
+    neighborhood: str | None = Field(default=None, max_length=120)
+    city: str | None = Field(default=None, max_length=120)
+    state: str | None = Field(default=None, min_length=2, max_length=2)
+    zip_code: str | None = Field(default=None, max_length=12)
     notes: str | None = Field(default=None, max_length=4000)
     status: ClientStatus = ClientStatus.ativo
 
-    @field_validator("cpf", "phone", mode="before")
+    @field_validator(
+        "cpf",
+        "phone",
+        "address",
+        "address_street",
+        "address_number",
+        "address_complement",
+        "neighborhood",
+        "city",
+        "state",
+        "zip_code",
+        mode="before",
+    )
     @classmethod
     def blank_to_none(cls, value: str | None) -> str | None:
         if isinstance(value, str) and not value.strip():
             return None
-        return value
+        return value.strip() if isinstance(value, str) else value
+
+    @field_validator("state")
+    @classmethod
+    def normalize_state(cls, value: str | None) -> str | None:
+        return value.upper() if value else value
 
 
 class ClientCreate(ClientBase):
@@ -34,8 +58,39 @@ class ClientUpdate(BaseModel):
     phone: str | None = Field(default=None, max_length=40)
     email: EmailStr | None = None
     address: str | None = Field(default=None, max_length=2000)
+    address_street: str | None = Field(default=None, max_length=220)
+    address_number: str | None = Field(default=None, max_length=40)
+    address_complement: str | None = Field(default=None, max_length=120)
+    neighborhood: str | None = Field(default=None, max_length=120)
+    city: str | None = Field(default=None, max_length=120)
+    state: str | None = Field(default=None, min_length=2, max_length=2)
+    zip_code: str | None = Field(default=None, max_length=12)
     notes: str | None = Field(default=None, max_length=4000)
     status: ClientStatus | None = None
+
+    @field_validator(
+        "cpf",
+        "phone",
+        "address",
+        "address_street",
+        "address_number",
+        "address_complement",
+        "neighborhood",
+        "city",
+        "state",
+        "zip_code",
+        mode="before",
+    )
+    @classmethod
+    def blank_to_none(cls, value: str | None) -> str | None:
+        if isinstance(value, str) and not value.strip():
+            return None
+        return value.strip() if isinstance(value, str) else value
+
+    @field_validator("state")
+    @classmethod
+    def normalize_state(cls, value: str | None) -> str | None:
+        return value.upper() if value else value
 
 
 class ClientStatusUpdate(BaseModel):
@@ -55,4 +110,3 @@ class ClientListResponse(BaseModel):
     total: int
     page: int
     size: int
-

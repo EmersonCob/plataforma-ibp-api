@@ -1,3 +1,4 @@
+import logging
 from datetime import UTC, datetime
 
 from fastapi import Request, UploadFile
@@ -21,6 +22,8 @@ SIGNABLE_STATUSES = {
     ContractStatus.visualizado,
     ContractStatus.aguardando_assinatura,
 }
+
+logger = logging.getLogger(__name__)
 
 
 class SignatureService:
@@ -107,7 +110,14 @@ class SignatureService:
                 contract.status = ContractStatus.expirado
                 raise AppError("Este link de assinatura expirou.", 410, "signature_link_expired")
 
-            signature_bytes = decode_data_url(payload.signature_data_url)
+            try:
+                signature_bytes = decode_data_url(payload.signature_data_url)
+            except ValueError as exc:
+                raise AppError(
+                    "Não foi possível ler a assinatura. Limpe o campo, assine novamente e tente confirmar.",
+                    400,
+                    "invalid_signature_image",
+                ) from exc
             if len(signature_bytes) > 2 * 1024 * 1024:
                 raise AppError("Assinatura maior que o limite permitido.", 413, "signature_too_large")
 
@@ -136,7 +146,17 @@ class SignatureService:
             contract.status = ContractStatus.assinado
             contract.signed_at = signed_at
             db.flush()
-            document_service.generate_signed_pdf(db, contract)
+            try:
+                document_service.generate_signed_pdf(db, contract)
+            except AppError:
+                raise
+            except Exception as exc:
+                logger.exception("Signed document generation failed for contract %s", contract.id)
+                raise AppError(
+                    "A assinatura não pôde ser finalizada porque o documento assinado não foi gerado. Tente novamente em instantes.",
+                    500,
+                    "signed_document_generation_failed",
+                ) from exc
             audit_service.log(
                 db,
                 entity_type="contract",

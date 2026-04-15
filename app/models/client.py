@@ -12,6 +12,7 @@ class Client(UUIDMixin, TimestampMixin, Base):
     __table_args__ = (
         Index("ix_clients_full_name_trgm_ready", "full_name"),
         Index("ix_clients_status_created_at", "status", "created_at"),
+        Index("ix_clients_city_state", "city", "state"),
     )
 
     full_name: Mapped[str] = mapped_column(String(220), nullable=False)
@@ -20,6 +21,13 @@ class Client(UUIDMixin, TimestampMixin, Base):
     phone: Mapped[str | None] = mapped_column(String(40), nullable=True)
     email: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
     address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    address_street: Mapped[str | None] = mapped_column(String(220), nullable=True)
+    address_number: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    address_complement: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    neighborhood: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    city: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    state: Mapped[str | None] = mapped_column(String(2), nullable=True)
+    zip_code: Mapped[str | None] = mapped_column(String(12), nullable=True, index=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[ClientStatus] = mapped_column(
         Enum(ClientStatus, name="ibp_client_status", inherit_schema=True),

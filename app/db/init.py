@@ -2,6 +2,7 @@ import logging
 
 from sqlalchemy import inspect, select, text
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.schema import CreateColumn
 
 from app.core.config import settings
 from app.core.security import hash_password
@@ -25,7 +26,9 @@ def init_database_schema() -> None:
     try:
         with engine.begin() as connection:
             connection.execute(text(f'CREATE SCHEMA IF NOT EXISTS "{settings.database_schema}"'))
-        Base.metadata.create_all(bind=engine, checkfirst=True)
+            Base.metadata.create_all(bind=connection, checkfirst=True)
+            _add_missing_nullable_columns(connection)
+
         inspector = inspect(engine)
         existing_tables = set(inspector.get_table_names(schema=settings.database_schema))
         expected_tables = {table.name for table in Base.metadata.sorted_tables}
@@ -38,6 +41,42 @@ def init_database_schema() -> None:
         raise RuntimeError(f"Tabelas obrigatorias ausentes: {', '.join(missing_tables)}")
 
     logger.info("Database schema ready with %s tables", len(expected_tables))
+
+
+def _add_missing_nullable_columns(connection) -> None:
+    """Add newly introduced nullable columns when a table already exists.
+
+    This keeps startup-driven schema creation compatible with the project rule
+    of not using manual migrations. Required structural changes still fail fast
+    so they are not applied silently in an unsafe way.
+    """
+    inspector = inspect(connection)
+    required_missing: list[str] = []
+    preparer = connection.dialect.identifier_preparer
+
+    for table in Base.metadata.sorted_tables:
+        if not inspector.has_table(table.name, schema=table.schema):
+            continue
+
+        existing_columns = {column["name"] for column in inspector.get_columns(table.name, schema=table.schema)}
+        for column in table.columns:
+            if column.name in existing_columns:
+                continue
+
+            has_default = column.default is not None or column.server_default is not None
+            if not column.nullable and not has_default:
+                required_missing.append(f"{table.name}.{column.name}")
+                continue
+
+            column_ddl = str(CreateColumn(column).compile(dialect=connection.dialect))
+            table_name = preparer.format_table(table)
+            connection.exec_driver_sql(f"ALTER TABLE {table_name} ADD COLUMN {column_ddl}")
+            logger.info("Added missing database column %s.%s", table.name, column.name)
+
+    if required_missing:
+        raise RuntimeError(
+            "Colunas obrigatorias ausentes sem valor padrao: " + ", ".join(sorted(required_missing))
+        )
 
 
 def bootstrap_initial_data() -> None:

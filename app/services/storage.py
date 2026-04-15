@@ -5,7 +5,7 @@ from uuid import uuid4
 from fastapi import UploadFile
 from minio import Minio
 from minio.error import S3Error
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, ImageOps, UnidentifiedImageError
 
 from app.core.config import settings
 from app.core.errors import AppError
@@ -42,36 +42,70 @@ class StorageService:
         try:
             image = Image.open(BytesIO(data))
             image.verify()
+            image = Image.open(BytesIO(data))
+            image = ImageOps.exif_transpose(image)
         except (UnidentifiedImageError, OSError) as exc:
             raise AppError("Arquivo de imagem inválido.", 400, "invalid_image") from exc
 
-        extension = ALLOWED_IMAGE_TYPES[file.content_type]
-        object_name = f"{prefix.strip('/')}/{uuid4()}{extension}"
-        self.upload_bytes(object_name, data, file.content_type)
+        optimized_data = self._optimize_photo(image)
+        object_name = f"{prefix.strip('/')}/{uuid4()}.jpg"
+        self.upload_bytes(object_name, optimized_data, "image/jpeg")
         return object_name
+
+    def _optimize_photo(self, image: Image.Image) -> bytes:
+        if image.mode != "RGB":
+            if "A" in image.getbands():
+                background = Image.new("RGB", image.size, "#ffffff")
+                background.paste(image, mask=image.getchannel("A"))
+                image = background
+            else:
+                image = image.convert("RGB")
+
+        max_dimension = settings.image_max_dimension
+        if max(image.size) > max_dimension:
+            image.thumbnail((max_dimension, max_dimension), Image.Resampling.LANCZOS)
+
+        output = BytesIO()
+        image.save(
+            output,
+            format="JPEG",
+            quality=settings.image_jpeg_quality,
+            optimize=True,
+            progressive=True,
+        )
+        return output.getvalue()
 
     def upload_bytes(self, object_name: str, data: bytes, content_type: str) -> str:
         self.ensure_bucket()
-        self.client.put_object(
-            settings.s3_bucket,
-            object_name,
-            BytesIO(data),
-            length=len(data),
-            content_type=content_type,
-        )
+        try:
+            self.client.put_object(
+                settings.s3_bucket,
+                object_name,
+                BytesIO(data),
+                length=len(data),
+                content_type=content_type,
+            )
+        except S3Error as exc:
+            raise AppError("Não foi possível armazenar o arquivo com segurança.", 500, "storage_upload_error") from exc
         return object_name
 
     def presigned_get_url(self, object_name: str, expires_seconds: int | None = None) -> str:
         self.ensure_bucket()
-        return self.client.presigned_get_object(
-            settings.s3_bucket,
-            object_name,
-            expires=timedelta(seconds=expires_seconds or settings.s3_presigned_expires_seconds),
-        )
+        try:
+            return self.client.presigned_get_object(
+                settings.s3_bucket,
+                object_name,
+                expires=timedelta(seconds=expires_seconds or settings.s3_presigned_expires_seconds),
+            )
+        except S3Error as exc:
+            raise AppError("Não foi possível preparar o acesso seguro ao arquivo.", 500, "storage_url_error") from exc
 
     def get_bytes(self, object_name: str) -> bytes:
         self.ensure_bucket()
-        response = self.client.get_object(settings.s3_bucket, object_name)
+        try:
+            response = self.client.get_object(settings.s3_bucket, object_name)
+        except S3Error as exc:
+            raise AppError("Não foi possível recuperar o arquivo armazenado.", 500, "storage_read_error") from exc
         try:
             return response.read()
         finally:
