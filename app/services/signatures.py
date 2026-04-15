@@ -94,15 +94,11 @@ class SignatureService:
             if cached_photo_path != payload.face_photo_path:
                 raise AppError("Envie a foto de confirmação antes de assinar.", 400, "photo_required")
 
-            contract = db.scalar(
-                select(Contract)
-                .options(joinedload(Contract.client), joinedload(Contract.signature))
-                .where(Contract.generated_link_token == token)
-                .with_for_update()
-            )
+            contract = db.scalar(self._contract_for_signing_statement(token))
             if not contract:
                 raise not_found("Link de assinatura não encontrado")
-            if contract.status == ContractStatus.assinado or contract.signature:
+            existing_signature = db.scalar(select(Signature).where(Signature.contract_id == contract.id))
+            if contract.status == ContractStatus.assinado or existing_signature:
                 raise AppError("Este contrato já foi assinado.", 409, "already_signed")
             if contract.status not in SIGNABLE_STATUSES:
                 raise AppError("Este contrato não está disponível para assinatura.", 409, "contract_not_signable")
@@ -185,6 +181,10 @@ class SignatureService:
             "signer_name": signer_name,
             "signed_at": contract.signed_at,
         }
+
+    @staticmethod
+    def _contract_for_signing_statement(token: str):
+        return select(Contract).where(Contract.generated_link_token == token).with_for_update(of=Contract)
 
     @staticmethod
     def _photo_key(token: str) -> str:
