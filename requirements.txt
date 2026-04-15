@@ -5,6 +5,7 @@ minio==7.2.10
 passlib[argon2]==1.7.4
 pillow==10.4.0
 psycopg[binary]==3.2.3
+psycopg2-binary==2.9.10
 pydantic==2.9.2
 pydantic-settings==2.6.1
 python-jose[cryptography]==3.3.0

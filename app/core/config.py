@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     backend_cors_origins: str = "https://ibp-web-qa.jbtechinnova.com"
 
     database_url: str
+    database_schema: str = "plataforma_ibp"
     redis_url: str = "redis://localhost:6379/0"
 
     s3_endpoint: str = Field(
@@ -52,6 +53,15 @@ class Settings(BaseSettings):
     def validate_secret_key(cls, value: str) -> str:
         if len(value) < 32:
             raise ValueError("SECRET_KEY deve ter pelo menos 32 caracteres")
+        return value
+
+    @field_validator("database_schema")
+    @classmethod
+    def validate_database_schema(cls, value: str) -> str:
+        import re
+
+        if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", value):
+            raise ValueError("DATABASE_SCHEMA deve conter apenas letras, numeros e underscore, sem iniciar por numero")
         return value
 
     @field_validator("s3_endpoint", mode="before")

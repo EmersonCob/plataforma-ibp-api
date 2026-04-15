@@ -31,7 +31,7 @@ class Contract(UUIDMixin, TimestampMixin, Base):
     content: Mapped[str] = mapped_column(Text, nullable=False)
     current_version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     status: Mapped[ContractStatus] = mapped_column(
-        Enum(ContractStatus, name="contract_status"),
+        Enum(ContractStatus, name="ibp_contract_status", inherit_schema=True),
         default=ContractStatus.rascunho,
         nullable=False,
         index=True,
@@ -67,4 +67,3 @@ class ContractVersion(UUIDMixin, Base):
 
     contract = relationship("Contract", back_populates="versions")
     changer = relationship("User")
-

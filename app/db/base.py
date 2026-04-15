@@ -1,13 +1,15 @@
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from sqlalchemy import DateTime
+from sqlalchemy import DateTime, MetaData
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.types import Uuid
 
+from app.core.config import settings
+
 
 class Base(DeclarativeBase):
-    pass
+    metadata = MetaData(schema=settings.database_schema)
 
 
 class UUIDMixin:
@@ -26,4 +28,3 @@ class TimestampMixin:
         onupdate=lambda: datetime.now(UTC),
         nullable=False,
     )
-

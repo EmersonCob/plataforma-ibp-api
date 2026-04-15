@@ -64,6 +64,8 @@ Nao ha comando manual de banco neste projeto.
 
 Ao iniciar, a API executa `Base.metadata.create_all()` de forma centralizada em `app/db/init.py`, verifica se todas as tabelas mapeadas existem e interrompe o startup se a estrutura minima nao estiver disponivel.
 
+As tabelas sao criadas no schema definido por `DATABASE_SCHEMA`, com valor padrao `plataforma_ibp`. Isso evita colisao com tabelas existentes no schema `public`, como `users` de outros sistemas.
+
 Esse comportamento atende ao requisito atual de criacao dinamica do schema. Alteracoes futuras de modelo devem ser tratadas com cuidado, pois `create_all()` cria objetos ausentes, mas nao substitui uma estrategia formal de evolucao de schema para alteracoes destrutivas.
 
 ## Bootstrap inicial
@@ -96,7 +98,8 @@ REFRESH_TOKEN_EXPIRE_MINUTES=10080
 PUBLIC_SIGN_URL_BASE=https://ibp-web-qa.jbtechinnova.com/assinatura
 BACKEND_CORS_ORIGINS=https://ibp-web-qa.jbtechinnova.com
 
-DATABASE_URL=postgresql+psycopg://postgres:configure-no-ambiente@postgres:5432/postgres
+DATABASE_URL=postgresql+psycopg2://postgres:configure-no-ambiente@postgres:5432/postgres
+DATABASE_SCHEMA=plataforma_ibp
 REDIS_URL=redis://:configure-no-ambiente@redis:6379/1
 
 OBJECT_STORAGE_ENDPOINT=https://s3-infra-qa.jbtechinnova.com

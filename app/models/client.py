@@ -22,11 +22,10 @@ class Client(UUIDMixin, TimestampMixin, Base):
     address: Mapped[str | None] = mapped_column(Text, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[ClientStatus] = mapped_column(
-        Enum(ClientStatus, name="client_status"),
+        Enum(ClientStatus, name="ibp_client_status", inherit_schema=True),
         default=ClientStatus.ativo,
         nullable=False,
         index=True,
     )
 
     contracts = relationship("Contract", back_populates="client")
-

@@ -23,11 +23,10 @@ class Signature(UUIDMixin, TimestampMixin, Base):
     ip_address: Mapped[str | None] = mapped_column(String(80), nullable=True)
     user_agent: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[SignatureStatus] = mapped_column(
-        Enum(SignatureStatus, name="signature_status"),
+        Enum(SignatureStatus, name="ibp_signature_status", inherit_schema=True),
         default=SignatureStatus.completed,
         nullable=False,
     )
     evidence_metadata: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
     contract = relationship("Contract", back_populates="signature")
-

@@ -1,6 +1,6 @@
 import logging
 
-from sqlalchemy import inspect, select
+from sqlalchemy import inspect, select, text
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.core.config import settings
@@ -23,10 +23,12 @@ O paciente declara ter lido e compreendido o conteudo deste documento antes da a
 def init_database_schema() -> None:
     """Create missing application tables and validate that the expected schema is available."""
     try:
+        with engine.begin() as connection:
+            connection.execute(text(f'CREATE SCHEMA IF NOT EXISTS "{settings.database_schema}"'))
         Base.metadata.create_all(bind=engine, checkfirst=True)
         inspector = inspect(engine)
-        existing_tables = set(inspector.get_table_names())
-        expected_tables = set(Base.metadata.tables.keys())
+        existing_tables = set(inspector.get_table_names(schema=settings.database_schema))
+        expected_tables = {table.name for table in Base.metadata.sorted_tables}
         missing_tables = sorted(expected_tables - existing_tables)
     except SQLAlchemyError as exc:
         logger.exception("Database schema initialization failed")
