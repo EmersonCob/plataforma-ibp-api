@@ -47,6 +47,17 @@ uvicorn app.main:app --reload
 
 A documentacao interativa fica em `/docs`.
 
+## Imagem Docker
+
+O projeto possui um `Dockerfile` proprio para empacotar apenas a API.
+
+```bash
+docker build -t plataforma-ibp-backend .
+docker run --env-file .env -p 8000:8000 plataforma-ibp-backend
+```
+
+O arquivo `deploy/nginx.conf` e um template de proxy para a API em `127.0.0.1:8000`. Ajuste o upstream conforme o ambiente onde o Nginx estiver rodando.
+
 ## Criacao automatica de tabelas
 
 Nao ha comando manual de banco neste projeto.
@@ -82,8 +93,8 @@ API_V1_PREFIX=/api/v1
 SECRET_KEY=troque-por-uma-chave-forte
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 REFRESH_TOKEN_EXPIRE_MINUTES=10080
-PUBLIC_SIGN_URL_BASE=https://seu-dominio/assinatura
-BACKEND_CORS_ORIGINS=https://seu-frontend
+PUBLIC_SIGN_URL_BASE=https://ibp-web-qa.jbtechinnova.com/assinatura
+BACKEND_CORS_ORIGINS=https://ibp-web-qa.jbtechinnova.com
 
 DATABASE_URL=postgresql+psycopg://usuario:senha@host:5432/banco
 REDIS_URL=redis://host:6379/0
@@ -99,6 +110,8 @@ MAX_UPLOAD_MB=8
 LOGIN_RATE_LIMIT=8/minute
 PUBLIC_RATE_LIMIT=30/minute
 ```
+
+Para CORS, use somente origins, sem caminho e sem barra final. Exemplo correto: `https://ibp-web-qa.jbtechinnova.com`. Nao use `https://ibp-web-qa.jbtechinnova.com/assinatura`.
 
 ## Fluxo principal
 

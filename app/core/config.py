@@ -14,8 +14,8 @@ class Settings(BaseSettings):
     secret_key: str
     access_token_expire_minutes: int = 30
     refresh_token_expire_minutes: int = 60 * 24 * 7
-    public_sign_url_base: str = "http://localhost:3000/assinatura"
-    backend_cors_origins: list[str] = ["http://localhost:3000"]
+    public_sign_url_base: str = "https://ibp-web-qa.jbtechinnova.com/assinatura"
+    backend_cors_origins: list[str] = ["https://ibp-web-qa.jbtechinnova.com"]
 
     database_url: str
     redis_url: str = "redis://localhost:6379/0"
